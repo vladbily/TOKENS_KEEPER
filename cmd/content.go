@@ -27,7 +27,21 @@ func createWcontent(win fyne.Window, DB *gorm.DB, DB_A *gorm.DB) fyne.CanvasObje
 	)
 
 	for i := range tokens {
-		tokens[i].Current_Price = parser(tokens[i].Name, DB_A)
+		newPrice := parser(tokens[i].Name, DB_A)
+		tokens[i].Current_Price = newPrice
+
+		var info Infos
+		if err := DB.Where("name = ?", tokens[i].Name).First(&info).Error; err != nil {
+			newInfo := Infos{Name: tokens[i].Name, Current_Price: newPrice}
+			if err := DB.Create(&newInfo).Error; err != nil {
+				fmt.Println("Error creating new record:", err)
+			}
+		} else {
+			info.Current_Price = newPrice
+			if err := DB.Save(&info).Error; err != nil {
+				fmt.Println("Error updating record:", err)
+			}
+		}
 	}
 
 	tS := totalSum(*DB)

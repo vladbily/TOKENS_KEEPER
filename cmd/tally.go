@@ -16,6 +16,14 @@ func totalSum(DB gorm.DB) float64 {
 	return tS
 }
 
+func getCurrentPriceFromDB(DB *gorm.DB, tokenName string) (float64, error) {
+	var info Infos
+	if err := DB.Where("name = ?", tokenName).First(&info).Error; err != nil {
+		return 0, err
+	}
+	return info.Current_Price, nil
+}
+
 /*func totalDif() string {
 	total_dif := 0.0
 	for i := range tokens {

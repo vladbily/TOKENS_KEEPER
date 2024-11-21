@@ -34,7 +34,7 @@ func createTokenlist() *widget.List {
 	return token_list
 }
 
-func createHistorylist() *widget.List {
+func createHistorylist(DB *gorm.DB) *widget.List {
 	history_list := widget.NewList(
 		func() int {
 			return len(histories)
@@ -48,17 +48,19 @@ func createHistorylist() *widget.List {
 			return container
 		},
 		func(lii widget.ListItemID, co fyne.CanvasObject) {
-			crp, _ := strconv.ParseFloat(fmt.Sprint(histories[lii].Current_Price), 64)
-			crc, _ := strconv.ParseFloat(fmt.Sprint(histories[lii].Count), 64)
-			prc, _ := strconv.ParseFloat(fmt.Sprint(histories[lii].Buy_Price), 64)
+			crc := histories[lii].Count
+			prc := histories[lii].Buy_Price
+			tokenName := histories[lii].Name
+			currentPrice, _ := getCurrentPriceFromDB(DB, tokenName)
 			labels := co.(*fyne.Container).Objects
 			labels[0].(*widget.Label).SetText("Date: " + histories[lii].Date)
-			labels[1].(*widget.Label).SetText("Buy Price: " + fmt.Sprintf("%2.f", histories[lii].Buy_Price))
-			labels[2].(*widget.Label).SetText("Count: " + fmt.Sprintf("%.4f", histories[lii].Count))
-			labels[3].(*widget.Label).SetText("Difference: " + fmt.Sprintf("%.2f", crc*(crp-prc)))
+			labels[1].(*widget.Label).SetText("Buy Price: " + fmt.Sprintf("%.2f", prc))
+			labels[2].(*widget.Label).SetText("Count: " + fmt.Sprintf("%.4f", crc))
+			labels[3].(*widget.Label).SetText("Difference: " + fmt.Sprintf("%.2f", crc*(currentPrice-prc)))
 		},
 	)
-	token_list.Refresh()
+
+	history_list.Refresh()
 	return history_list
 }
 
@@ -89,7 +91,7 @@ func onTokenSelected(win fyne.Window, DB *gorm.DB, id widget.ListItemID) {
 
 	DB.Where("token_id = ?", tokens[id].Id).Find(&histories)
 
-	history_list := createHistorylist()
+	history_list := createHistorylist(DB)
 	token_scroll := container.NewScroll(history_list)
 
 	token_scroll.Resize(fyne.NewSize(800, 270))
